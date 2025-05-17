@@ -19,7 +19,7 @@ python PowerShell-Obfuscator.py
 
 ## **Brief Explanation**
 
-![Obfuscation](assets/Obfuscation.png)
+![Obfuscation](assets/Obfuscation.jpg)
 
 ### **String Based Indirection**
 
