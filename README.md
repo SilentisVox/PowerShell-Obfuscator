@@ -38,7 +38,7 @@ Invoke-Expression "Get-Command"
 
 Now the obfuscation techniques used for our string indirection are diverse, but easily understood.
 
-#### **Ordinal to Char to String**
+#### Ordinal to Char to String
 
 ```powershell
 # Take a list of oridinal values, cast them to chars, then using
@@ -51,14 +51,14 @@ $String   = [String]::Join("", $Chars)
 [string]::join("",(72,101,108,108,111|%{[char]$_}))
 ```
 
-#### **Ordinal to Char Concatenate**
+#### Ordinal to Char Concatenate
 
 ```powershell
 # Direct ordinal values being cast to a char, then concatenated.
 [char](72)+[char](101)+[char](108)+[char](108)+[char](111)
 ```
 
-#### **Random Indexing**
+#### Random Indexing
 
 ```powershell
 # Have a randomized list with needed chars, the indices needed to
@@ -73,7 +73,7 @@ $String        = $Chars -Join ""
 "plobSerlbH"[9,5,7,1,2] -join ""
 ```
 
-#### **Environment Variable Char Extraction**
+#### Environment Variable Char Extraction
 
 ```powershell
 # Because of the methods in obtaining environment varaibles
