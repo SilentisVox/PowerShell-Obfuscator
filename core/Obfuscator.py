@@ -129,9 +129,7 @@ class Obfuscator:
             string_ordinals.append(string_ordinal)
 
         string_ordinals_list            = ",".join(string_ordinals)
-        obfuscate_start                 = "([string]::join('', ( ( "
-        obfuscate_end                   = " ) |%{$_}|%{ ([char][int] $_)})) |%{$_}| % {$_})"
-        obfuscated_string               = obfuscate_start + string_ordinals_list + obfuscate_end
+        obfuscated_string               = "([string]::join('', ( ( {}".format(string_ordinals_list) + " ) |%{$_}|%{ ([char][int] $_)})) |%{$_}| % {$_})"
 
         return obfuscated_string
 
@@ -141,16 +139,11 @@ class Obfuscator:
         for character in input_string:
             character_ordinal           = ord(character)
             string_ordinal              = str(character_ordinal)
-            obfuscate_start             = "[char]("
-            obfuscate_end               = ")"
-            obfuscated_character        = obfuscate_start + string_ordinal + obfuscate_end
+            obfuscated_character        = "[char]({})".format(string_ordinal)
             obfuscated_characters.append(obfuscated_character)
 
-        obfuscated_character_string = "+".join(obfuscated_characters)
-        obfuscate_start             = "("
-        obfuscate_end               = ")"
-
-        obfuscated_string           = obfuscate_start + obfuscated_character_string + obfuscate_end
+        obfuscated_character_string     = "+".join(obfuscated_characters)
+        obfuscated_string               = "({})".format(obfuscated_character_string)
 
         return obfuscated_string
 
@@ -164,17 +157,12 @@ class Obfuscator:
             random_operator_set         = random.choice(operators)
             character_ordinal           = ord(character)
             string_ordinal              = str(character_ordinal)
-            obfuscate_start             = "([char]("
-            obfuscate_end               = ")|%{$_}| % {$_} |%{$_})"
             obfuscated_math             = random_number_string + random_operator_set[0] + string_ordinal + random_operator_set[1] + random_number_string
-            obfuscated_character        = obfuscate_start + obfuscated_math + obfuscate_end
+            obfuscated_character        = "([char]({}".format(obfuscated_math) + ")|%{$_}| % {$_} |%{$_})"
             obfuscated_characters.append(obfuscated_character)
 
-        obfuscated_character_string = "+".join(obfuscated_characters)
-        obfuscate_start             = "("
-        obfuscate_end               = ")"
-
-        obfuscated_string           = obfuscate_start + obfuscated_character_string + obfuscate_end
+        obfuscated_character_string     = "+".join(obfuscated_characters)
+        obfuscated_string               = "({})".format(obfuscated_character_string)
         
         return obfuscated_string
 
@@ -200,10 +188,7 @@ class Obfuscator:
 
         randomized_string               = "".join(randomized_characters)
         randomized_indices_string       = ",".join(indices_used)
-        obfuscate_start                 = "('"
-        obfuscate_middle                = "'["
-        obfuscate_end                   = "] -join '' |%{$_}| % {$_})"
-        obfuscated_string               = obfuscate_start + randomized_string + obfuscate_middle + randomized_indices_string + obfuscate_end
+        obfuscated_string               = "('{}'[{}".format(randomized_string, randomized_indices_string) + "] -join '' |%{$_}| % {$_})"
 
         return obfuscated_string
 
@@ -219,10 +204,7 @@ class Obfuscator:
                 possible_indices        = possible_dictionaries[chosen_variable]
                 chosen_index            = random.choice(possible_indices)
                 chosen_index_string     = str(chosen_index)
-                obfuscate_start         = "$env:"
-                obfuscate_middle        = "["
-                obfuscate_end           = "]"
-                obfuscated_character    = obfuscate_start + chosen_variable + obfuscate_middle + chosen_index_string + obfuscate_end
+                obfuscated_character    = "$env:{}[{}]".format(chosen_variable, chosen_index_string)
                 environment_variables.append(obfuscated_character)
             else:
                 other_functions         = [
@@ -236,9 +218,7 @@ class Obfuscator:
                 environment_variables.append(obfuscated_character)
 
         obfuscated_characters           = "+".join(environment_variables)
-        obfuscate_start                 = "("
-        obfuscate_end                   = ")"
-        obfuscated_string               = obfuscate_start + obfuscated_characters + obfuscate_end
+        obfuscated_string               = "({})".format(obfuscated_characters)
 
         return obfuscated_string
 
