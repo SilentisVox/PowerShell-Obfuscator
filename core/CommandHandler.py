@@ -64,7 +64,7 @@ class CommandHandler:
             print(error)
             return
 
-        print(self.textassets.success("Success!"))
+        print(self.textassets.success)
 
     def set_level(self) -> None:
         message                         = self.textassets.white("Input the level of obfuscation. (1-5)")
@@ -83,7 +83,7 @@ class CommandHandler:
 
         level                           = int(level_input)
         self.level                      = level
-        print(self.textassets.success("Success!"))
+        print(self.textassets.success)
 
     def obfuscate(self) -> None:
         parser                          = self.parser(
@@ -144,7 +144,7 @@ class CommandHandler:
             print(error)
             return
 
-        print(self.textassets.success("Success!"))
+        print(self.textassets.success)
 
     def read_input(self, user_input) -> None:
         if user_input not in self.commands:
