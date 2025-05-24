@@ -35,6 +35,7 @@ class TextAssets:
         self.apply_gradient()
         self.prompt                     = self.white(">>> ")
         self.plus                       = self.blue("[+]")
+        self.success                    = self.green("Success!")
         self.help_menu                  = f"""
 
     {self.plus} help   ::  Prints this menu.
@@ -46,7 +47,6 @@ class TextAssets:
     {self.plus} save   ::  Saves the file.
 
 """
-    self.success                        = self.green("Success!")
 
     def apply_gradient(self) -> None:
         text_lines                      = self.banner.split("\n")
