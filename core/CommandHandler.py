@@ -57,7 +57,7 @@ class CommandHandler:
             return
 
         try:
-            with open(path, "r") as file_buffer:
+            with open(path, "r", encoding="utf-8", errors="ignore") as file_buffer:
                 self.file_data          = file_buffer.read()
         except:
             error                       = self.textassets.red("Failed to read file!")
