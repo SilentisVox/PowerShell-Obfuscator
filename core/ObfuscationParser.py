@@ -13,12 +13,12 @@ class ObjectConfig:
 @dataclasses.dataclass
 class TargetedObjects:
     variables                           : ObjectConfig
+    functions                           : ObjectConfig
     strings                             : ObjectConfig
     types                               : ObjectConfig
     inline_types                        : ObjectConfig
     methods                             : ObjectConfig
     attributes                          : ObjectConfig
-    functions                           : ObjectConfig
     commands                            : ObjectConfig
 
 class ObfuscationParser:
@@ -42,43 +42,43 @@ class ObfuscationParser:
     def get_objects(self) -> None:
         object_names                    = [
             "variables",
+            "functions",
             "strings",
             "types",
             "inline_types",
             "methods",
             "attributes",
-            "functions",
             "commands"
         ]
         object_patterns                 = [
-            r"\$[A-Za-z0-9]+",
+            r"\$[A-Za-z0-9_]+",
+            r"(?i)(?:function)\s+([A-Za-z0-9\-]+)",
             r"(@\"[\s\S]*?\"@|@'[\s\S]*?'@|\"[^\"\r\n]*\"|'[^'\r\n]*')",
             r"\[[A-Za-z0-9.]+\]",
-            r"(?i)(?:\b(?:New-Object|Add-Member)\b|-TypeName|-AssemblyName)\s+([A-Za-z0-9\.\[\]]+)",
+            r"(?i)(?:\b(?:New-Object|Add-Member)\b|-TypeName|-AssemblyName)\s+([A-Za-z0-9_\.\[\]]+)",
             r"((?:\.|::)[A-Za-z0-9](?:[A-Za-z0-9]*[A-Za-z0-9])?\()",
             r"(?<!\.)\.(?![A-Za-z0-9]+['\"\.\[\(\]])([A-Za-z0-9_]+)",
-            r"(?i)(?:function)\s+([A-Za-z0-9\-]+)",
             r"(?<=[()[\]{};,|+\s])([A-Za-z][A-Za-z0-9]*-[A-Za-z0-9]+)(?=[()[\]{};,|+\s])"
         ]
         object_finds                    = [
             self.find_variables,
+            self.find_functions,
             self.find_strings,
             self.find_types,
             self.find_inline_types,
             self.find_methods,
             self.find_attributes,
-            self.find_functions,
-            self.find_commands,
+            self.find_commands
         ]
         object_replaces                 = [
             self.replace_variables,
+            self.replace_functions,
             self.replace_strings,
             self.replace_types,
             self.replace_inline_types,
             self.replace_methods,
             self.replace_attributes,
-            self.replace_functions,
-            self.replace_commands,
+            self.replace_commands
         ]
         object_count                    = self.level_map[self.level]
         object_configs                  = []
@@ -96,8 +96,10 @@ class ObfuscationParser:
         self.objects                    = self.targetedobjects(*object_configs)
 
     def delete_comments(self) -> None:
-        comment_pattern                 = r"#[^\n;]*[;\n]"
-        self.file_data                  = re.sub(comment_pattern, "", self.file_data)
+        multiline_pattern               = r"<#.*?#>"
+        self.file_data                  = re.sub(multiline_pattern, "", self.file_data, flags=re.DOTALL)
+        comment_pattern                 = r"#.*?\n"
+        self.file_data                  = re.sub(comment_pattern, "\n", self.file_data)
         
     def delete_empty(self) -> None:
         empty_pattern                   = r"(?m)^[ \t]*\r?\n"
@@ -122,6 +124,14 @@ class ObfuscationParser:
         variables_matched               = re.findall(pattern, self.file_data)
         self.objects.variables.held     = variables_matched
         results                         = len(variables_matched)
+
+        return results
+
+    def find_functions(self) -> int:
+        pattern                         = self.objects.functions.pattern
+        functions_matched               = re.findall(pattern, self.file_data)
+        self.objects.functions.held     = functions_matched
+        results                         = len(functions_matched)
 
         return results
 
@@ -165,14 +175,6 @@ class ObfuscationParser:
 
         return results
 
-    def find_functions(self) -> int:
-        pattern                         = self.objects.functions.pattern
-        functions_matched               = re.findall(pattern, self.file_data)
-        self.objects.functions.held     = functions_matched
-        results                         = len(functions_matched)
-
-        return results
-
     def find_commands(self) -> int:
         pattern                         = self.objects.commands.pattern
         commands_matched                = re.findall(pattern, self.file_data)
@@ -182,22 +184,35 @@ class ObfuscationParser:
         return results
 
     def replace_variables(self) -> int:
-        variables_matched              = self.objects.variables.held
-        variables_unique               = set(variables_matched)
-        variables_sorted               = sorted(variables_unique, key=len, reverse=True)
-        os_variables                   = self.obfuscator.os_variables
+        variables_matched               = self.objects.variables.held
+        variables_unique                = set(variables_matched)
+        variables_sorted                = sorted(variables_unique, key=len, reverse=True)
+        os_variables                    = self.obfuscator.os_variables
 
-        for variable in variables_sorted:
-            variable_lower             = variable.lower()
-            variable_strip             = variable_lower[1:]
+        for variable_ in variables_sorted:
+            variable_lower              = variable_.lower()
+            variable_strip              = variable_lower[1:]
 
             if variable_strip in os_variables:
                 continue
 
             random_variable             = "$" + self.obfuscator.random_variable()
-            self.file_data              = self.file_data.replace(variable, random_variable)
+            self.file_data              = self.file_data.replace(variable_, random_variable)
 
         results                         = len(variables_sorted)
+
+        return results
+
+    def replace_functions(self) -> int:
+        functions_matched               = self.objects.functions.held
+        functions_unique                = set(functions_matched)
+        functions_sorted                = sorted(functions_unique, key=len, reverse=True)
+
+        for function_ in functions_sorted:
+            random_function             = self.obfuscator.random_variable()
+            self.file_data              = self.file_data.replace(function_, random_function)
+
+        results                         = len(functions_sorted)
 
         return results
 
@@ -207,25 +222,25 @@ class ObfuscationParser:
         strings_sorted                  = sorted(strings_unique, key=len, reverse=True)
         exempt                          = ["''", '""']
 
-        for string in strings_sorted:
-            if string in exempt:
+        for string_ in strings_sorted:
+            if string_ in exempt:
                 continue
 
-            if string.startswith("@"):
-                string_formatted        = string[3:-3]
+            if string_.startswith("@"):
+                string_formatted        = string_[3:-3]
                 random_function         = random.choice(self.obfuscator_functions[:3])
             else:
-                string_formatted        = string[1:-1]
+                string_formatted        = string_[1:-1]
                 random_function         = random.choice(self.obfuscator_functions)
 
             randomized_string           = random_function(string_formatted)
 
-            if "$" in string:
+            if "$" in string_:
                 start                   = self.obfuscator.random_case("($ExecutionContext.InvokeCommand.ExpandString(")
                 end                     = self.obfuscator.random_case("))")
-                string                  = start + string + end
+                randomized_string       = start + randomized_string + end
 
-            self.file_data              = self.file_data.replace(string, randomized_string)
+            self.file_data              = self.file_data.replace(string_, randomized_string)
 
         results                         = len(strings_sorted)
 
@@ -245,15 +260,15 @@ class ObfuscationParser:
         return results
 
     def replace_inline_types(self) -> int:
-        inline_types_matched           = self.objects.inline_types.held
-        inline_types_unique            = set(inline_types_matched)
-        inline_types_sorted            = sorted(inline_types_unique, key=len, reverse=True)
+        inline_types_matched            = self.objects.inline_types.held
+        inline_types_unique             = set(inline_types_matched)
+        inline_types_sorted             = sorted(inline_types_unique, key=len, reverse=True)
 
-        for inline_type in inline_types_sorted:
-            randomized_case             = self.obfuscator.random_case(inline_type)
+        for inline_type_ in inline_types_sorted:
+            randomized_case             = self.obfuscator.random_case(inline_type_)
             random_function             = random.choice(self.obfuscator_functions)
             randomized_inline_type      = random_function(randomized_case)
-            self.file_data              = self.file_data.replace(inline_type, randomized_inline_type)
+            self.file_data              = self.file_data.replace(inline_type_, randomized_inline_type)
 
         results                         = len(inline_types_sorted)
 
@@ -264,19 +279,19 @@ class ObfuscationParser:
         methods_unique                  = set(methods_matched)
         methods_sorted                  = sorted(methods_unique, key=len, reverse=True)
 
-        for method in methods_sorted:
-            if method.startswith("."):
+        for method_ in methods_sorted:
+            if method_.startswith("."):
                 reformat                = "."
-                method_to_randomize     = method[1:-1]
+                method_to_randomize     = method_[1:-1]
             else:
                 reformat                = "::"
-                method_to_randomize     = method[2:-1]
+                method_to_randomize     = method_[2:-1]
 
             randomized_case             = self.obfuscator.random_case(method_to_randomize)
             random_function             = random.choice(self.obfuscator_functions)
             randomized_method           = random_function(randomized_case)
             randomized_method           = reformat + randomized_method + "("
-            self.file_data              = self.file_data.replace(method, randomized_method)
+            self.file_data              = self.file_data.replace(method_, randomized_method)
 
         results                         = len(methods_sorted)
 
@@ -287,77 +302,110 @@ class ObfuscationParser:
         attributes_unique               = set(attributes_matched)
         attributes_sorted               = sorted(attributes_unique, key=len, reverse=True)
 
-        for attribute in attributes_sorted:
-            randomized_case             = self.obfuscator.random_case(attribute)
+        for attribute_ in attributes_sorted:
+            randomized_case             = self.obfuscator.random_case(attribute_)
             random_function             = random.choice(self.obfuscator_functions)
-            randomized_attribute        = random_function(randomized_case)
-            self.file_data              = self.file_data.replace(attribute, randomized_attribute)
+            attribute_                  = "." + attribute_
+            randomized_attribute        = "." + random_function(randomized_case)
+            self.file_data              = self.file_data.replace(attribute_, randomized_attribute)
 
         results                         = len(attributes_sorted)
 
         return results
 
-    def replace_functions(self) -> int:
-        functions_matched               = self.objects.functions.held
-        functions_unique                = set(functions_matched)
-        functions_sorted                = sorted(functions_unique, key=len, reverse=True)
-
-        for function_ in functions_sorted:
-            random_function             = self.obfuscator.random_variable()
-            self.file_data              = self.file_data.replace(function_, random_function)
-
-        results                         = len(functions_sorted)
-
-        return results
-
     def replace_commands(self) -> int:
-        commands_matched               = self.objects.commands.held
-        commands_unique                = set(commands_matched)
-        commands_sorted                = sorted(commands_unique, key=len, reverse=True)
+        commands_matched                = self.objects.commands.held
+        commands_unique                 = set(commands_matched)
+        commands_sorted                 = sorted(commands_unique, key=len, reverse=True)
 
-        for command in commands_sorted:
-            randomized_case             = self.obfuscator.random_case(command)
+        for command_ in commands_sorted:
+            randomized_case             = self.obfuscator.random_case(command_)
             random_function             = random.choice(self.obfuscator_functions)
             randomized_command          = random_function(randomized_case)
             randomized_command          = "&" + randomized_command
-            self.file_data              = self.file_data.replace(command, randomized_command)
+            self.file_data              = self.file_data.replace(command_, randomized_command)
 
         results                         = len(commands_sorted)
 
         return results
 
+    def get_param_start(self, index):
+        while True:
+            index                      += 1
+
+            if self.file_data[index] == "(":
+                return index
+
+    def get_param_end(self, index):
+        count                           = 1
+
+        while True:
+            index                      += 1
+
+            if self.file_data[index] == "(":
+                count                  += 1
+
+            if self.file_data[index] == ")":
+                count                  -= 1
+
+            if count == 0:
+                return index
+
     def squish(self) -> None:
         self.file_data                  = ";".join(self.file_data.splitlines())
-        self.file_data                  = re.sub(r"\)[ ;]*\{", "){", self.file_data)
-        self.file_data                  = re.sub(r"[; ]+\{", "{", self.file_data)
-        self.file_data                  = re.sub(r"[; ]+\}", "}", self.file_data)
-        self.file_data                  = re.sub(r"(?i)\}[; ]+else", "}else", self.file_data)
-        self.file_data                  = re.sub(r"(?i)\}[; ]+elseif", "}elseif", self.file_data)
-        self.file_data                  = re.sub(r"(?i)\}[; ]+catch", "}catch", self.file_data)
+        self.file_data                  = re.sub(r"\)[ ;]*\{",          "){",       self.file_data)
+        self.file_data                  = re.sub(r"[; ]+\(",            "(",        self.file_data)
+        self.file_data                  = re.sub(r"[; ]+\{",            "{",        self.file_data)
+        self.file_data                  = re.sub(r"\([; ]+",            "(",        self.file_data)
+        self.file_data                  = re.sub(r"\{[; ]+",            "{",        self.file_data)
+        self.file_data                  = re.sub(r"[; ]+\)",            ")",        self.file_data)
+        self.file_data                  = re.sub(r"[; ]+\}",            "}",        self.file_data)
+        self.file_data                  = re.sub(r"[; ]+\}[; ]+",       "}",        self.file_data)
+        self.file_data                  = re.sub(r"(?i)\}[; ]+else",    "}else",    self.file_data)
+        self.file_data                  = re.sub(r"(?i)\}[; ]+elseif",  "}elseif",  self.file_data)
+        self.file_data                  = re.sub(r"(?i)\}[; ]+catch",   "}catch",   self.file_data)
         self.file_data                  = re.sub(r"(?i)\}[; ]+finally", "}finally", self.file_data)
+        self.file_data                  = re.sub(r"(?i)[; ]+param",     "param",    self.file_data)
+
+        matches                         = re.finditer(r"(?i)\bparam\b", self.file_data)
+        matches                         = reversed(list(matches))
+
+        for match_ in matches:
+            index                       = match_.start()
+            param_start                 = self.get_param_start(index)
+            param_end                   = self.get_param_end(param_start)
+            param_block                 = self.file_data[index:param_end + 1]
+            param_block                 = re.sub(r";", "", param_block)
+            self.file_data              = self.file_data[:index] + param_block + self.file_data[param_end + 1:]
 
 def test_parser():
-    parser                              = ObfuscationParser(Obfuscator(), "./payload/example_3.ps1", 5)
+    objectconfig                        = ObjectConfig
+    targetedobjects                     = TargetedObjects
+
+    with open("./payload/example3.ps1", "r", encoding="utf-8", errors="ignore") as file_buffer:
+        file_data                       = file_buffer.read()
+
+    parser                              = ObfuscationParser(Obfuscator(), file_data, 5, objectconfig, targetedobjects)
 
     parser.delete_comments()
     parser.delete_empty()
 
     parser.find_variables()
+    parser.find_functions()
     parser.find_strings()
     parser.find_types()
     parser.find_inline_types()
     parser.find_methods()
     parser.find_attributes()
-    parser.find_functions()
     parser.find_commands()
 
     parser.replace_variables()
+    parser.replace_functions()
     parser.replace_strings()
     parser.replace_types()
     parser.replace_inline_types()
     parser.replace_methods()
     parser.replace_attributes()
-    parser.replace_functions()
     parser.replace_commands()
 
     parser.squish()
