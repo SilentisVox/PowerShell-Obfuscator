@@ -222,6 +222,19 @@ class Obfuscator:
 
         return obfuscated_string
 
+    def final_pass(self, input_string: str) -> str:
+        final_data_list                 = []
+
+        for character in input_string:
+            value                       = ord(character)
+            value_string                = str(value)
+            final_data_list.append(value_string)
+
+        formatted_data                  = ",".join(final_data_list)
+        obfuscated_string               = "([string]::join('',(({}".format(formatted_data) + ")|%{[char]$_})))|invoke-expression"
+
+        return obfuscated_string
+
 def test_obfuscation():
     obfuscator                          = Obfuscator()
 
