@@ -378,6 +378,8 @@ class ObfuscationParser:
             param_block                 = re.sub(r";", "", param_block)
             self.file_data              = self.file_data[:index] + param_block + self.file_data[param_end + 1:]
 
+        self.file_data                  = self.obfuscator.final_pass(self.file_data)
+
 def test_parser():
     objectconfig                        = ObjectConfig
     targetedobjects                     = TargetedObjects
