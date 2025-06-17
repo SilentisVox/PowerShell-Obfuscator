@@ -29,6 +29,7 @@ class ObfuscationParser:
         self.file_data                  = file_data
         self.level                      = level
         self.level_map                  = {
+            0                           : 0,
             1                           : 1,
             2                           : 2,
             3                           : 4,
@@ -81,7 +82,7 @@ class ObfuscationParser:
             self.replace_commands
         ]
         object_count                    = self.level_map[self.level]
-        object_configs                  = []
+        object_configs                  = [None] * 8
         
         for index in range(object_count):
             new_object                  = self.objectconfig(
@@ -91,7 +92,7 @@ class ObfuscationParser:
                 find                    = object_finds    [index], 
                 replace                 = object_replaces [index]
             )
-            object_configs.append(new_object)
+            object_configs[0]           = new_object
 
         self.objects                    = self.targetedobjects(*object_configs)
 
@@ -361,6 +362,7 @@ class ObfuscationParser:
         self.file_data                  = re.sub(r"[; ]+\)",            ")",        self.file_data)
         self.file_data                  = re.sub(r"[; ]+\}",            "}",        self.file_data)
         self.file_data                  = re.sub(r"[; ]+\}[; ]+",       "}",        self.file_data)
+        self.file_data                  = re.sub(r"\}[; ]+\[",          "}",        self.file_data)
         self.file_data                  = re.sub(r"(?i)\}[; ]+else",    "}else",    self.file_data)
         self.file_data                  = re.sub(r"(?i)\}[; ]+elseif",  "}elseif",  self.file_data)
         self.file_data                  = re.sub(r"(?i)\}[; ]+catch",   "}catch",   self.file_data)
