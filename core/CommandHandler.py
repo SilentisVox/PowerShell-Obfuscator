@@ -72,7 +72,7 @@ class CommandHandler:
         level_input                     = input("> ")
         level_list                      = []
 
-        for level in range(1,6):
+        for level in range(6):
             level                       = str(level)
             level_list.append(level)
 
@@ -112,6 +112,9 @@ class CommandHandler:
         print(text)
 
         for object_ in objects:
+            if not object_:
+                continue
+
             find_function               = object_.find
             items_found                 = find_function()
             text                        = "{} Found {} collective {}.".format(drop_down, items_found, object_.name)            
@@ -121,6 +124,9 @@ class CommandHandler:
         print(text)
 
         for object_ in objects:
+            if not object_:
+                continue
+
             replace_function            = object_.replace
             items_replaced              = replace_function()
             text                        = "{} Replaced {} unique {}.".format(drop_down, items_replaced, object_.name)
